@@ -8,8 +8,8 @@ appsettings.*.local.json
 *.pem
 
 # .NET
-backend/bin/
-backend/obj/
+bin/
+obj/
 *.user
 .vs/
 
