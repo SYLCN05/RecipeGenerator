@@ -14,24 +14,26 @@ public class ConversationController(GeminiClient geminiClient) : ControllerBase
         var systemInstruction = ConversationPromptBuilder.BuildSystemInstruction(request);
         var contents = ConversationPromptBuilder.BuildContents(request);
 
-        GeminiTurnPayload payload;
-        try
+        for (var attempt = 1; attempt <= 2; attempt++)
         {
-            payload = await geminiClient.GenerateConversationTurnAsync(systemInstruction, contents, cancellationToken);
-        }
-        catch (GeminiException ex)
-        {
-            return Problem(detail: ex.Message, statusCode: StatusCodes.Status502BadGateway);
+            try
+            {
+                var payload = await geminiClient.GenerateConversationTurnAsync(systemInstruction, contents, cancellationToken);
+                var normalized = ConversationResponseValidator.Normalize(payload, request.PeopleCount, request.LastOfferedRecipes);
+                return Ok(normalized);
+            }
+            catch (GeminiMalformedOutputException) when (attempt == 1)
+            {
+                // retry once
+            }
+            catch (GeminiException ex)
+            {
+                return Problem(detail: ex.Message, statusCode: StatusCodes.Status502BadGateway);
+            }
         }
 
-        try
-        {
-            var normalized = ConversationResponseValidator.Normalize(payload, request.PeopleCount, request.LastOfferedRecipes);
-            return Ok(normalized);
-        }
-        catch (GeminiException ex)
-        {
-            return Problem(detail: ex.Message, statusCode: StatusCodes.Status502BadGateway);
-        }
+        return Problem(
+            detail: "Gemini returned malformed output twice in a row.",
+            statusCode: StatusCodes.Status502BadGateway);
     }
 }

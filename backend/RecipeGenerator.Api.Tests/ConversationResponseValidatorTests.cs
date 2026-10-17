@@ -116,7 +116,7 @@ public class ConversationResponseValidatorTests
     {
         var payload = new GeminiTurnPayload("asking", text, null, null, null);
 
-        Assert.Throws<GeminiException>(() =>
+        Assert.Throws<GeminiMalformedOutputException>(() =>
             ConversationResponseValidator.Normalize(payload, knownPeopleCount: null, lastOfferedRecipes: null));
     }
 
@@ -125,14 +125,14 @@ public class ConversationResponseValidatorTests
     {
         var payload = new GeminiTurnPayload("cooking", "Hallo!", null, null, null);
 
-        Assert.Throws<GeminiException>(() =>
+        Assert.Throws<GeminiMalformedOutputException>(() =>
             ConversationResponseValidator.Normalize(payload, knownPeopleCount: null, lastOfferedRecipes: null));
     }
 
     [Fact]
     public void Normalize_NullPayload_Throws()
     {
-        Assert.Throws<GeminiException>(() =>
+        Assert.Throws<GeminiMalformedOutputException>(() =>
             ConversationResponseValidator.Normalize(null, knownPeopleCount: null, lastOfferedRecipes: null));
     }
 }

@@ -5,6 +5,8 @@ namespace RecipeGenerator.Api.Services;
 
 public class GeminiException(string message) : Exception(message);
 
+public class GeminiMalformedOutputException(string message) : GeminiException(message);
+
 public class GeminiClient(IHttpClientFactory httpClientFactory, IConfiguration configuration)
 {
     private const string Model = "gemini-3.5-flash-lite";
@@ -45,11 +47,11 @@ public class GeminiClient(IHttpClientFactory httpClientFactory, IConfiguration c
         try
         {
             return JsonSerializer.Deserialize<GeminiTurnPayload>(text, JsonOptions)
-                   ?? throw new GeminiException("Gemini returned a null conversation payload.");
+                   ?? throw new GeminiMalformedOutputException("Gemini returned a null conversation payload.");
         }
         catch (JsonException ex)
         {
-            throw new GeminiException($"Gemini returned malformed JSON: {ex.Message}");
+            throw new GeminiMalformedOutputException($"Gemini returned malformed JSON: {ex.Message}");
         }
     }
 
@@ -66,7 +68,20 @@ public class GeminiClient(IHttpClientFactory httpClientFactory, IConfiguration c
         request.Headers.Add("x-goog-api-key", apiKey);
         request.Content = JsonContent.Create(requestBody);
 
-        var response = await client.SendAsync(request, cancellationToken);
+        HttpResponseMessage response;
+        try
+        {
+            response = await client.SendAsync(request, cancellationToken);
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new GeminiException("Gemini API request timed out.");
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new GeminiException($"Gemini API request failed: {ex.Message}");
+        }
+
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
 
         if (!response.IsSuccessStatusCode)

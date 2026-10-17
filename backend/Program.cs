@@ -12,6 +12,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddHttpClient("gemini", client =>
 {
     client.BaseAddress = new Uri("https://generativelanguage.googleapis.com/");
+    client.Timeout = TimeSpan.FromSeconds(20);
 });
 builder.Services.AddScoped<GeminiClient>();
 
@@ -49,8 +50,6 @@ if (app.Environment.IsDevelopment())
         }
     });
 }
-
-app.UseHttpsRedirection();
 
 app.UseAuthorization();
 

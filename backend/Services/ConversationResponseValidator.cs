@@ -18,17 +18,17 @@ public static class ConversationResponseValidator
     {
         if (payload is null)
         {
-            throw new GeminiException("Gemini returned no payload.");
+            throw new GeminiMalformedOutputException("Gemini returned no payload.");
         }
 
         if (string.IsNullOrWhiteSpace(payload.AssistantMessageText))
         {
-            throw new GeminiException("Gemini response is missing assistantMessageText.");
+            throw new GeminiMalformedOutputException("Gemini response is missing assistantMessageText.");
         }
 
         if (payload.Stage is null || !ValidStages.Contains(payload.Stage))
         {
-            throw new GeminiException($"Gemini response has an unrecognized stage: '{payload.Stage}'.");
+            throw new GeminiMalformedOutputException($"Gemini response has an unrecognized stage: '{payload.Stage}'.");
         }
 
         var stage = payload.Stage;
