@@ -1,0 +1,26 @@
+# Env / secrets
+.env
+.env.*
+!.env.example
+appsettings.Development.json
+appsettings.*.local.json
+*.pfx
+*.pem
+
+# .NET
+backend/bin/
+backend/obj/
+*.user
+.vs/
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+npm-debug.log*
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
