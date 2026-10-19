@@ -1,16 +1,36 @@
-import { useReducer, useState } from 'react'
-import { sendConversationTurn } from './api'
-import { conversationReducer, initialConversationState } from './conversationReducer'
-import type { Language } from './types'
+import { useReducer, useState } from "react";
+import { sendConversationTurn } from "./api";
+import {
+  conversationReducer,
+  initialConversationState,
+} from "./conversationReducer";
+import { RecipeCard } from "./RecipeCard";
+import { RecipeDetailView } from "./RecipeDetailView";
+import { useSpeechRecognition } from "./useSpeechRecognition";
+import { useSpeechSynthesis } from "./useSpeechSynthesis";
+import { VoiceOrb, type VoiceOrbState } from "./VoiceOrb";
+import type { Language, RecipeSummary } from "./types";
+
+const VOICE_ORB_STATUS: Record<VoiceOrbState, string> = {
+  idle: "Tik om te praten",
+  listening: "Aan het luisteren — tik om te stoppen",
+  thinking: "Kookbot denkt na...",
+  speaking: "Kookbot spreekt...",
+};
 
 function App() {
-  const [state, dispatch] = useReducer(conversationReducer, initialConversationState)
-  const [draft, setDraft] = useState('')
+  const [state, dispatch] = useReducer(
+    conversationReducer,
+    initialConversationState,
+  );
+  const [draft, setDraft] = useState("");
+  const [showList, setShowList] = useState(false);
+  const speechSynthesis = useSpeechSynthesis();
 
   async function sendTurn(userMessage: string) {
-    if (!state.language || !userMessage.trim()) return
+    if (!state.language || !userMessage.trim()) return;
 
-    dispatch({ type: 'SEND_START' })
+    dispatch({ type: "SEND_START" });
     try {
       const response = await sendConversationTurn({
         language: state.language,
@@ -18,107 +38,185 @@ function App() {
         history: state.history,
         lastOfferedRecipes: state.lastOfferedRecipes,
         userMessage,
-      })
-      dispatch({ type: 'SEND_SUCCESS', userMessage, response })
+      });
+      dispatch({ type: "SEND_SUCCESS", userMessage, response });
+      speechSynthesis.speak(response.assistantMessageText, state.language);
     } catch (err) {
-      dispatch({ type: 'SEND_ERROR', message: err instanceof Error ? err.message : 'Unknown error' })
+      console.error("Conversation turn failed:", err);
+      dispatch({
+        type: "SEND_ERROR",
+        message: err instanceof Error ? err.message : "Unknown error",
+        userMessage,
+      });
     }
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    const text = draft
-    setDraft('')
-    void sendTurn(text)
+  function selectRecipe(recipe: RecipeSummary) {
+    setShowList(false);
+    void sendTurn(recipe.title);
+  }
+
+  const speechRecognition = useSpeechRecognition(state.language, setDraft);
+
+  function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (speechRecognition.isListening) speechRecognition.stop();
+    const text = draft;
+    setDraft("");
+    void sendTurn(text);
   }
 
   function selectLanguage(language: Language) {
-    dispatch({ type: 'SET_LANGUAGE', language })
+    dispatch({ type: "SET_LANGUAGE", language });
   }
 
   if (!state.language) {
     return (
-      <main>
-        <h1>What's for dinner?</h1>
-        <p>Choose a conversation language:</p>
-        <button onClick={() => selectLanguage('nl')}>Nederlands</button>
-        <button onClick={() => selectLanguage('tr')}>Türkçe</button>
+      <main className="language-picker">
+        <h1>Wat eten we vanavond?</h1>
+        <p>In welke taal wil je praten?</p>
+        <div className="language-picker-options">
+          <button onClick={() => selectLanguage("nl")}>Nederlands</button>
+          <button onClick={() => selectLanguage("tr")}>Türkçe</button>
+        </div>
       </main>
-    )
+    );
   }
 
+  const voiceOrbState: VoiceOrbState = speechRecognition.isListening
+    ? "listening"
+    : state.status === "sending"
+      ? "thinking"
+      : speechSynthesis.isSpeaking
+        ? "speaking"
+        : "idle";
+  const voiceOrbDisabled =
+    state.status === "sending" || speechSynthesis.isSpeaking;
+
   return (
-    <main>
-      <h1>What's for dinner?</h1>
-
-      <section>
-        {state.history.map((message, i) => (
-          <p key={i}>
-            <strong>{message.role === 'user' ? 'You' : 'AI'}:</strong> {message.text}
+    <>
+      <header className="app-bar">
+        <h1>KookBot</h1>
+        {speechSynthesis.isSupported && (
+          <button
+            type="button"
+            className="app-bar-mute"
+            onClick={speechSynthesis.toggleMute}
+          >
+            {speechSynthesis.isMuted ? "Geluid aan" : "Dempen"}
+          </button>
+        )}
+      </header>
+      <main>
+        {speechRecognition.isSupported ? (
+          <div className="voice-orb-wrap">
+            <VoiceOrb
+              state={voiceOrbState}
+              disabled={voiceOrbDisabled}
+              onClick={
+                speechRecognition.isListening
+                  ? speechRecognition.stop
+                  : speechRecognition.start
+              }
+              label={VOICE_ORB_STATUS[voiceOrbState]}
+            />
+            <p className="voice-orb-status">
+              {VOICE_ORB_STATUS[voiceOrbState]}
+            </p>
+          </div>
+        ) : (
+          <p className="voice-note">
+            Spraakherkenning wordt niet ondersteund in deze browser — typ je
+            bericht hieronder.
           </p>
-        ))}
-      </section>
+        )}
 
-      {state.stage === 'recommending' && state.recipes && (
-        <section>
-          <h2>Recipe ideas</h2>
-          <ul>
-            {state.recipes.map((recipe) => (
-              <li key={recipe.id}>
-                <strong>{recipe.title}</strong> — {recipe.shortDescription}
-                <br />
-                {recipe.macros.calories} kcal · {recipe.macros.proteinGrams}g protein ·{' '}
-                {recipe.macros.carbsGrams}g carbs · {recipe.macros.fatGrams}g fat
-                <br />
-                <button onClick={() => sendTurn(recipe.title)}>Tell me more</button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+        <div className="chat-log">
+          {state.history.map((message, i) => (
+            <div
+              key={i}
+              className={`chat-message chat-message--${message.role === "user" ? "user" : "assistant"}`}
+            >
+              <span className="chat-message-author">
+                {message.role === "user" ? "Jij" : "Kookbot"}
+              </span>
+              <span className="chat-message-text">{message.text}</span>
+            </div>
+          ))}
+        </div>
 
-      {state.stage === 'detail' && state.recipeDetail && (
-        <section>
-          <h2>
-            {state.recipeDetail.title} (serves {state.recipeDetail.servings})
-          </h2>
-          <h3>Ingredients</h3>
-          <ul>
-            {state.recipeDetail.ingredients.map((ingredient, i) => (
-              <li key={i}>
-                {ingredient.quantity} {ingredient.name}
-              </li>
-            ))}
-          </ul>
-          <h3>Steps</h3>
-          <ol>
-            {state.recipeDetail.steps.map((step, i) => (
-              <li key={i}>{step}</li>
-            ))}
-          </ol>
-          <p>
-            {state.recipeDetail.macros.calories} kcal · {state.recipeDetail.macros.proteinGrams}g
-            protein · {state.recipeDetail.macros.carbsGrams}g carbs ·{' '}
-            {state.recipeDetail.macros.fatGrams}g fat (estimated, per serving)
+        {state.stage === "recommending" && state.recipes && (
+          <section>
+            <h2>Suggesties voor vanavond</h2>
+            <ul className="recipe-card-grid">
+              {state.recipes.map((recipe) => (
+                <RecipeCard
+                  key={recipe.id}
+                  recipe={recipe}
+                  onSelect={selectRecipe}
+                />
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {state.stage === "detail" &&
+          state.recipeDetail &&
+          (showList && state.lastOfferedRecipes ? (
+            <section>
+              <h2>Suggesties voor vanavond</h2>
+              <ul className="recipe-card-grid">
+                {state.lastOfferedRecipes.map((recipe) => (
+                  <RecipeCard
+                    key={recipe.id}
+                    recipe={recipe}
+                    onSelect={selectRecipe}
+                  />
+                ))}
+              </ul>
+            </section>
+          ) : (
+            <RecipeDetailView
+              recipeDetail={state.recipeDetail}
+              onBackToList={
+                state.lastOfferedRecipes && state.lastOfferedRecipes.length > 1
+                  ? () => setShowList(true)
+                  : null
+              }
+            />
+          ))}
+
+        {state.status === "error" && (
+          <p role="alert">
+            Er ging iets mis — probeer het opnieuw.
+            {state.lastFailedMessage && (
+              <button
+                type="button"
+                onClick={() => sendTurn(state.lastFailedMessage!)}
+              >
+                Opnieuw proberen
+              </button>
+            )}
           </p>
-        </section>
-      )}
+        )}
+        {speechRecognition.error && (
+          <p role="alert">{speechRecognition.error}</p>
+        )}
 
-      {state.status === 'error' && <p role="alert">Error: {state.errorMessage}</p>}
-
-      <form onSubmit={handleSubmit}>
-        <input
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          disabled={state.status === 'sending'}
-          placeholder="Type your message..."
-        />
-        <button type="submit" disabled={state.status === 'sending'}>
-          Send
-        </button>
-      </form>
-    </main>
-  )
+        <form onSubmit={handleSubmit}>
+          <input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            disabled={state.status === "sending"}
+            placeholder="Typ je bericht..."
+          />
+          <button type="submit" disabled={state.status === "sending"}>
+            Versturen
+          </button>
+        </form>
+      </main>
+    </>
+  );
 }
 
-export default App
+export default App;
