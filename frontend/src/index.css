@@ -1,7 +1,498 @@
 :root {
-  color-scheme: light dark;
+  color-scheme: dark;
+
+  --charcoal: #171b17;
+  --surface: #202620;
+  --surface-raised: #2a312a;
+  --border: #39412f;
+  --ivory: #f2efe6;
+  --muted: #9ca395;
+  --basilic: #7fb069;
+  --basilic-strong: #93c47d;
+  --koraal: #e2665b;
+  --honing: #e2a23b;
+  --lucht: #6b8cae;
+
+  --font: 'Manrope', system-ui, sans-serif;
+  --radius: 0.75rem;
+  --radius-sm: 0.5rem;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
+  background: var(--charcoal);
+  color: var(--ivory);
+  font-family: var(--font);
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.5rem;
+  line-height: 1.25;
+}
+
+h1 {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+h2 {
+  font-size: 1.15rem;
+}
+
+h3 {
+  font-size: 1rem;
+}
+
+p {
+  margin: 0 0 0.75rem;
+}
+
+/* App shell */
+
+.app-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.25rem;
+  background: var(--charcoal);
+  border-bottom: 1px solid var(--border);
+}
+
+.app-bar h1 {
+  margin: 0;
+}
+
+.app-bar-mute {
+  background: transparent;
+  border: 1px solid var(--border);
+  min-height: 2.25rem;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.82rem;
+}
+
+main {
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 7rem;
+}
+
+button {
+  font-family: var(--font);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ivory);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 1.1rem;
+  min-height: 2.75rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--basilic);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--basilic-strong);
+  outline-offset: 2px;
+}
+
+input {
+  font-family: var(--font);
+  font-weight: 500;
+  font-size: 0.92rem;
+  color: var(--ivory);
+  background: transparent;
+  border: none;
+  padding: 0.6rem 0.2rem;
+  min-height: 2.5rem;
+  flex: 1;
+}
+
+input::placeholder {
+  color: var(--muted);
+}
+
+/* Language picker */
+
+.language-picker {
+  text-align: center;
+  padding-top: 4rem;
+  max-width: 24rem;
+}
+
+.language-picker h1 {
+  font-size: 1.6rem;
+}
+
+.language-picker p {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.language-picker-options {
+  display: flex;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.language-picker-options button {
+  background: var(--surface);
+  padding: 0.75rem 1.5rem;
+}
+
+.language-picker-options button:hover {
+  background: var(--basilic);
+  border-color: var(--basilic);
+  color: var(--charcoal);
+}
+
+/* Voice orb */
+
+.voice-orb-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0 1.75rem;
+}
+
+.voice-orb {
+  position: relative;
+  width: 4.25rem;
+  height: 4.25rem;
+  min-height: 4.25rem;
+  border-radius: 50%;
+  padding: 0;
+  background: var(--surface-raised);
+  border: 2px solid var(--basilic);
+}
+
+.voice-orb::before,
+.voice-orb::after {
+  content: '';
+  position: absolute;
+  inset: -0.35rem;
+  border-radius: 50%;
+  border: 1.5px solid var(--basilic);
+  opacity: 0;
+}
+
+.voice-orb--listening {
+  background: var(--basilic);
+  animation: orb-pulse 1.6s ease-in-out infinite;
+}
+
+.voice-orb--listening::before {
+  animation: orb-ring 1.6s ease-out infinite;
+}
+
+.voice-orb--listening::after {
+  animation: orb-ring 1.6s ease-out infinite 0.5s;
+}
+
+.voice-orb--thinking {
+  border-color: var(--honing);
+  animation: orb-spin 1.8s linear infinite;
+  border-style: dashed;
+}
+
+.voice-orb--speaking {
+  border-color: var(--lucht);
+  background: var(--lucht);
+  animation: orb-pulse 0.9s ease-in-out infinite;
+}
+
+.voice-orb-status {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+@keyframes orb-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+@keyframes orb-ring {
+  0% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.45);
+  }
+}
+
+@keyframes orb-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-orb,
+  .voice-orb::before,
+  .voice-orb::after {
+    animation: none !important;
+  }
+}
+
+/* Chat log */
+
+.chat-log {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0 0 1.5rem;
+}
+
+.chat-message {
+  max-width: 88%;
+}
+
+.chat-message--user {
+  align-self: flex-end;
+}
+
+.chat-message--user .chat-message-text {
+  display: inline-block;
+  background: var(--surface-raised);
+  border-radius: var(--radius) var(--radius) 0.2rem var(--radius);
+  padding: 0.6rem 0.9rem;
+}
+
+.chat-message--assistant {
+  align-self: flex-start;
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.chat-message--assistant::before {
+  content: '';
+  flex-shrink: 0;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-top: 0.5rem;
+  border-radius: 50%;
+  background: var(--basilic);
+}
+
+.chat-message-author {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin-bottom: 0.15rem;
+}
+
+.chat-message--user .chat-message-author {
+  text-align: right;
+}
+
+/* Forms */
+
+form {
+  position: sticky;
+  bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.3rem 0.4rem 0.3rem 1rem;
+  margin-top: 1rem;
+}
+
+form button {
+  border-radius: 999px;
+  padding: 0.55rem 1.1rem;
+  min-height: 2.4rem;
+}
+
+form button[type='submit'] {
+  background: var(--basilic);
+  border-color: var(--basilic);
+  color: var(--charcoal);
+}
+
+form button[type='submit']:hover:not(:disabled) {
+  background: var(--basilic-strong);
+}
+
+.voice-note {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+[role='alert'] {
+  background: var(--surface);
+  border: 1px solid var(--koraal);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+}
+
+/* Recipe cards */
+
+.recipe-card-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.recipe-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem;
+  width: 100%;
+  max-width: 17rem;
+}
+
+.recipe-card-description {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.recipe-card button,
+.recipe-detail-back {
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--basilic);
+  color: var(--basilic-strong);
+}
+
+.recipe-card button:hover,
+.recipe-detail-back:hover {
+  background: var(--basilic);
+  color: var(--charcoal);
+}
+
+/* Macro rings */
+
+.macro-ring-row {
+  display: flex;
+  gap: 0.85rem;
+  margin: 0.9rem 0;
+}
+
+.macro-ring {
+  text-align: center;
+}
+
+.macro-ring-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.macro-note {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+/* Recipe detail */
+
+.recipe-detail {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.4rem 1.5rem;
+}
+
+.recipe-detail-back {
+  width: auto;
+  margin-bottom: 1rem;
+}
+
+.servings-badge {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--charcoal);
+  background: var(--basilic);
+  border-radius: 999px;
+  padding: 0.2rem 0.7rem;
+  vertical-align: middle;
+}
+
+.recipe-detail ul,
+.recipe-detail ol {
+  padding-left: 1.2rem;
+}
+
+.recipe-detail ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.recipe-detail ul li {
+  position: relative;
+  padding-left: 1.3rem;
+  margin-bottom: 0.4rem;
+}
+
+.recipe-detail ul li::before {
+  content: '';
+  position: absolute;
+  left: 0.15rem;
+  top: 0.5rem;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: var(--basilic);
+}
+
+.recipe-detail ol li {
+  margin-bottom: 0.5rem;
+}
+
+@media (max-width: 420px) {
+  .recipe-card {
+    max-width: 100%;
+  }
 }
