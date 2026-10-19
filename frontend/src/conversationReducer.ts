@@ -17,6 +17,7 @@ export interface ConversationState {
   recipeDetail: RecipeDetail | null
   status: 'idle' | 'sending' | 'error'
   errorMessage: string | null
+  lastFailedMessage: string | null
 }
 
 export const initialConversationState: ConversationState = {
@@ -29,13 +30,14 @@ export const initialConversationState: ConversationState = {
   recipeDetail: null,
   status: 'idle',
   errorMessage: null,
+  lastFailedMessage: null,
 }
 
 export type ConversationAction =
   | { type: 'SET_LANGUAGE'; language: Language }
   | { type: 'SEND_START' }
   | { type: 'SEND_SUCCESS'; userMessage: string; response: ConversationTurnResponse }
-  | { type: 'SEND_ERROR'; message: string }
+  | { type: 'SEND_ERROR'; message: string; userMessage: string }
 
 export function conversationReducer(
   state: ConversationState,
@@ -65,11 +67,17 @@ export function conversationReducer(
         recipes: response.recipes,
         recipeDetail: response.recipeDetail,
         lastOfferedRecipes: response.recipes ?? state.lastOfferedRecipes,
+        lastFailedMessage: null,
       }
     }
 
     case 'SEND_ERROR':
-      return { ...state, status: 'error', errorMessage: action.message }
+      return {
+        ...state,
+        status: 'error',
+        errorMessage: action.message,
+        lastFailedMessage: action.userMessage,
+      }
 
     default:
       return state
